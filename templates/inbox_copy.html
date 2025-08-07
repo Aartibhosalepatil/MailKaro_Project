@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load highlight %} {# Make sure this points to your custom filter file #}
+
+{% block content %}
+<div class="inbox-header">
+    <h2>Inbox</h2>
+    <div class="pagination top-pagination"> 
+        <!-- {% with current_params="" %}
+            {% if query %}{% with current_params=current_params|add:"&q="|add:query %}{% endwith %}{% endif %}
+            {% if sort_by %}{% with current_params=current_params|add:"&sort="|add:sort_by %}{% endwith %}{% endif %}
+            {% if order %}{% with current_params=current_params|add:"&order="|add:order %}{% endwith %}{% endif %} -->
+
+            <span class="pagination-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+
+            <div class="pagination-controls">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{{ current_params }}" class="pagination-link">&laquo; first</a>
+                    <a href="?page={{ page_obj.previous_page_number }}{{ current_params }}" class="pagination-link">previous</a>
+                {% else %}
+                    <span class="pagination-disabled">&laquo; first</span>
+                    <span class="pagination-disabled">previous</span>
+                {% endif %}
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{{ current_params }}" class="pagination-link">next</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{{ current_params }}" class="pagination-link">last &raquo;</a>
+                {% else %}
+                    <span class="pagination-disabled">next</span>
+                    <span class="pagination-disabled">last &raquo;</span>
+                {% endif %}
+            </div>
+        {% endwith %}
+    </div>
+</div>
+
+
+<!--Tabs section -->
+
+<div class="email-tabs">
+    <a href="#" class="tab-item active">Primary</a>
+    <!-- <a href="#" class="tab-item">Promotions</a>
+    <a href="#" class="tab-item">Social</a>
+    <a href="#" class="tab-item">Updates</a> -->
+</div>
+
+
+<table class="email-table"> 
+    <thead>
+        <tr>
+            <!-- <th class="checkbox-col"><input type="checkbox" class="select-all-checkbox"></th> {# Gmail-like select all checkbox #} -->
+            <!-- <th class="icon-col"></th> {# For star icon #} -->
+            <th class="from-col">
+                <a href="?page=1{% if query %}&q={{ query }}{% endif %}&sort=from&order={% if sort_by == 'from' and order == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link">
+                    From
+                    {% if sort_by == 'from' %}
+                        <span class="sort-icon">{% if order == 'asc' %}&#9650;{% else %}&#9660;{% endif %}</span>
+                    {% endif %}
+                </a>
+            </th>
+            <th class="subject-col">
+                <a href="?page=1{% if query %}&q={{ query }}{% endif %}&sort=subject&order={% if sort_by == 'subject' and order == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link">
+                    Subject
+                    {% if sort_by == 'subject' %}
+                        <span class="sort-icon">{% if order == 'asc' %}&#9650;{% else %}&#9660;{% endif %}</span>
+                    {% endif %}
+                </a>
+            </th>
+            <th class="date-col">
+                <a href="?page=1{% if query %}&q={{ query }}{% endif %}&sort=date&order={% if sort_by == 'date' and order == 'asc' %}desc{% else %}asc{% endif %}" class="sort-link">
+                    Date
+                    {% if sort_by == 'date' %}
+                        <span class="sort-icon">{% if order == 'asc' %}&#9650;{% else %}&#9660;{% endif %}</span>
+                    {% endif %}
+                </a>
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for email in page_obj %}
+        <tr class="email-row">
+            <!-- <td class="checkbox-col"><input type="checkbox" class="email-checkbox"></td>
+            <td class="icon-col"><i class="far fa-star star-icon"></i></td> {# Empty star icon #} -->
+            <td class="from-col">{{ email.from_email|safe }}</td> 
+            <td class="subject-col">
+                <a class="mail-link" href="{% url 'message_detail' 'email' email.id %}">
+                    {{ email.subject|safe }}
+                </a>
+            </td>
+            <td class="date-col">{{ email.timestamp|date:"M d, Y, g:i a" }}</td>
+            
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="no-emails-found">No emails found.</td> 
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
+
+
+=========================================================================================
+
+base.html
+
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MailKaro - Your Inbox</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <a href="{% url 'inbox' %}" class="logo-link">
+                <img src="{% static 'img/logo_mailkaro_new.png' %}" alt="MailKaro Logo" class="logo-img">
+            </a>
+        </div>
+        <div class="header-center">
+             <form method="GET" action="{% url 'inbox' %}" class="header-search-form">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" name="q" placeholder="Search mail" value="{{ query|default_if_none:'' }}" class="header-search-input">
+            </form>
+        </div>
+        <div class="header-right">
+            {% if user.is_authenticated %}
+                <span class="welcome-text">Welcome, {{ user.username }}</span>
+                <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="login-btn">Login</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="app-main-container">
+        {% if user.is_authenticated and request.resolver_match.url_name not in 'login,signup' %}
+        <div class="sidebar">
+            <div class="sidebar-compose">
+                <a href="{% url 'compose' %}" class="compose-btn"><i class="fas fa-plus"></i> Compose</a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li>
+                        <a href="{% url 'inbox' %}" class="sidebar-item {% if request.resolver_match.url_name == 'inbox' %}active{% endif %}">
+                            <i class="fas fa-inbox sidebar-icon"></i> Inbox
+                            <!-- <span class="email-count">2,500</span> -->
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'eml_upload' %}" class="sidebar-item {% if request.resolver_match.url_name == 'eml_upload' %}active{% endif %}">
+                            <i class="fa-solid fa-upload sidebar-icon"></i> Upload EML
+                        </a>
+                    </li>
+                    <!-- <li>
+                        <a href="#" class="sidebar-item">
+                            <i class="fas fa-star sidebar-icon"></i> Starred
+                        </a>
+                    </li> -->
+                    <!-- <li>
+                        <a href="#" class="sidebar-item">
+                            <i class="fas fa-paper-plane sidebar-icon"></i> Sent
+                        </a>
+                    </li> -->
+                    <!-- <li>
+                        <a href="#" class="sidebar-item">
+                            <i class="fas fa-file-alt sidebar-icon"></i> Drafts
+                        </a>
+                    </li> -->
+                    <!-- <li>
+                        <a href="#" class="sidebar-item">
+                            <i class="fas fa-exclamation-triangle sidebar-icon"></i> Spam
+                        </a>
+                    </li> -->
+                    <!-- <li>
+                        <a href="#" class="sidebar-item">
+                            <i class="fas fa-trash-alt sidebar-icon"></i> Trash
+                        </a>
+                    </li> -->
+                    <!-- <li class="sidebar-label-title">LABELS</li>
+                    <li><a href="#" class="sidebar-item"><i class="fas fa-tag sidebar-icon"></i> Important</a></li>
+                    <li><a href="#" class="sidebar-item"><i class="fas fa-tag sidebar-icon"></i> Work</a></li> -->
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        <main class="content-area">
+            {% block content %}
+            {# Content from inbox.html will be inserted here #}
+            {% endblock %}
+        </main>
+    </div>
+
+    <footer class="app-footer">
+        &copy; 2025 MailKaro | All Rights Reserved
+    </footer>
+</body>
+</html>

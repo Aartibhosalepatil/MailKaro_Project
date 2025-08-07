@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Parsed Email</h2>
+
+<p><strong>From:</strong> {{ from_email }}</p>
+<p><strong>To:</strong> {{ to }}</p>
+<p><strong>CC:</strong> {{ cc }}</p>
+<p><strong>BCC:</strong> {{ bcc }}</p>
+<p><strong>Subject:</strong> {{ subject }}</p>
+
+<hr>
+<h4>Plain Text Body</h4>
+<pre>{{ plain_body }}</pre>
+
+<hr>
+<h4>HTML Body</h4>
+<div style="border: 1px solid #ccc; padding: 10px;">
+    {{ html_body|safe }}
+</div>
+
+{% if attachments %}
+<hr>
+<h4>Attachments</h4>
+<ul>
+    {% for attachment in attachments %}
+        <li><a href="{{ attachment.file.url }}" download>{{ attachment.filename }}</a></li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

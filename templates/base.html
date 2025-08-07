@@ -1,0 +1,408 @@
+{% load static %}
+{% load cache %}
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>MailKaro - Inbox</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+<meta name="csrf-token" content="{{ csrf_token }}">
+
+</head>
+
+<body>
+
+<div class="header">
+
+<div class="header-left">
+
+<a href="{% url 'inbox' %}" class="logo-link">
+
+<img src="{% static 'img/logo_mailkaro_new.png' %}" alt="MailKaro Logo" class="logo-img">
+
+</a>
+
+</div>
+
+<div class="header-center">
+
+<form method="GET" action="{% url 'inbox' %}" class="header-search-form">
+    <i class="fas fa-search search-icon"></i>
+    <input
+        type="text"
+        name="q"
+        placeholder="Search mail"
+        value="{{ query|default_if_none:'' }}"
+        class="header-search-input"
+    />
+    <span class="clear-search-btn" id="clear-main-search">
+        <i class="fas fa-times"></i>
+    </span>
+
+
+    <button
+        type="button"
+        class="advanced-search-toggle"
+        id="advanced-search-toggle"
+    >
+        <i class="fas fa-chevron-down"></i>
+    </button>
+
+    <div class="advanced-search-dropdown" id="advanced-search-dropdown">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="from_field">From:</label>
+                <input type="text" id="from_field" name="from_email">
+            </div>
+            <div class="form-group">
+                <label for="to_field">To:</label>
+                <input type="text" id="to_field" name="to_email">
+            </div>
+            <div class="form-group">
+                <label for="subject_field">Subject:</label>
+                <input type="text" id="subject_field" name="subject">
+            </div>
+
+             <div class="form-group">
+                <label for="date_field">Date:</label>
+                <input type="date" id="date_field" name="date_on">
+            </div>
+            <!-- <div class="form-group">
+                <label for="has_attachment">Has Attachment:</label>
+                <select id="has_attachment" name="has_attachment">
+                    <option value="any">Any</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                </select>
+            </div> -->
+            <!-- <div class="form-group">
+                <label for="date_after_field">Date After:</label>
+                <input type="date" id="date_after_field" name="date_after">
+            </div> -->
+            <!-- <div class="form-group">
+                <label for="date_before_field">Date Before:</label>
+                <input type="date" id="date_before_field" name="date_before">
+            </div> -->
+        </div>
+        <div class="form-actions">
+            <button type="button" id="clear-search-btn" class="clear-button">Clear</button>
+            <button type="submit" class="search-button">Search</button>
+        </div>
+    </div>
+</form>
+</div>
+
+
+
+<div class="header-right">
+
+<span class="welcome-text" id="user-info-toggle" class="user-avatar user-info-dropdown dropdown-username" style="cursor: pointer;">{{ request.user.username|slice:"1"|upper}}</span> {# Add an ID for easy targeting #}
+
+<!-- <a href="{% url 'logout' %}" class="logout-btn">Logout</a> -->
+
+
+
+<div class="user-info-dropdown" id="user-info-dropdown-content">
+
+<div class="dropdown-header">
+
+<span class="user-avatar">
+
+{{ request.user.username|slice:":1"|upper }}
+
+</span>
+
+<span class="dropdown-username">Hi, {{ request.user.username }}!</span>
+
+</div>
+
+<div class="dropdown-body">
+
+<!-- <a href="#" class="dropdown-link">{{request.user.email}}</a> -->
+
+<div class="usage-info">
+
+<span>{{request.user.email}}</span>
+
+
+</div>
+
+</div>
+
+<div class="dropdown-footer">
+
+<!-- <a href="{% url 'signup'%}" class="dropdown-link">Add account</a> -->
+
+<a href="{% url 'logout' %}" class="dropdown-link sign-out">Log out</a>
+
+</div>
+
+</div>
+
+</div>
+
+
+
+</div>
+
+
+
+
+<div class="app-main-container">
+
+{% if user.is_authenticated and request.resolver_match.url_name not in 'login,signup' %}
+
+<div class="sidebar">
+
+<div class="sidebar-compose">
+
+<a href="{% url 'compose' %}" class="compose-btn" ><i class="fas fa-plus"></i> Compose</a>
+
+</div>
+
+<nav class="sidebar-nav">
+
+<ul>
+
+<li>
+
+<a href="{% url 'inbox' %}" title="inbox" class="sidebar-item {% if request.resolver_match.url_name == 'inbox' %}active{% endif %}">
+
+<i class="fas fa-inbox sidebar-icon"></i> Inbox
+
+{% if inbox_total_count is not None %}
+
+<span class="email-count">{{ inbox_total_count }}</span>
+
+{% endif %}
+
+</a>
+
+</li>
+
+<li>
+
+<a href="{% url 'eml_upload' %}" title="Upload EML" class="sidebar-item {% if request.resolver_match.url_name == 'eml_upload' %}active{% endif %}">
+
+<i class="fa-solid fa-upload sidebar-icon"></i> Upload EML
+
+</a>
+
+</li>
+
+<li>
+
+<a href="#" class="sidebar-item">
+
+<i class="fas fa-star sidebar-icon"></i> Starred
+
+</a>
+
+</li>
+
+<li>
+
+<a href="{% url 'sent'%}" class="sidebar-item">
+
+<i class="fas fa-paper-plane sidebar-icon"></i> Sent
+
+</a>
+
+</li>
+
+<li>
+
+<a href="#" class="sidebar-item">
+
+<i class="fas fa-file-alt sidebar-icon"></i> Drafts
+
+</a>
+
+</li>
+
+<li>
+
+<a href="#" class="sidebar-item">
+
+<i class="fas fa-exclamation-triangle sidebar-icon"></i> Spam
+
+</a>
+
+</li>
+
+<li>
+
+<a href="#" class="sidebar-item">
+
+<i class="fas fa-trash-alt sidebar-icon"></i> Trash
+
+</a>
+
+</li>
+
+<li class="sidebar-label-title">LABELS</li>
+
+<li><a href="#" class="sidebar-item"><i class="fas fa-tag sidebar-icon"></i> Important</a></li>
+
+<li><a href="#" class="sidebar-item"><i class="fas fa-tag sidebar-icon"></i> Work</a></li>
+
+</ul>
+
+</nav>
+
+</div>
+
+{% endif %}
+
+
+
+<main class="content-area">
+
+{% block content %}
+
+{# Content from inbox.html will be inserted here #}
+
+{% endblock %}
+
+</main>
+
+</div>
+
+
+
+<footer class="app-footer">
+
+&copy; 2025 MailKaro | All Rights Reserved
+
+</footer>
+
+
+
+
+
+
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+
+const userInfoToggle = document.getElementById('user-info-toggle');
+
+const userInfoDropdown = document.getElementById('user-info-dropdown-content');
+
+
+
+if (userInfoToggle && userInfoDropdown) {
+
+userInfoToggle.addEventListener('click', function(event) {
+
+event.stopPropagation(); // Prevent click from immediately propagating to document
+
+userInfoDropdown.classList.toggle('show');
+
+});
+
+
+
+// Close dropdown if clicked outside
+
+document.addEventListener('click', function(event) {
+
+if (!userInfoDropdown.contains(event.target) && userInfoDropdown.classList.contains('show')) {
+
+userInfoDropdown.classList.remove('show');
+
+}
+
+});
+
+
+
+// Prevent dropdown from closing when clicking inside it
+
+userInfoDropdown.addEventListener('click', function(event) {
+
+event.stopPropagation();
+
+});
+
+}
+
+});
+
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // ... (Your other JavaScript for user info dropdown, etc.) ...
+
+            // Main Search Bar Clear Button Logic
+    const mainSearchInput = document.getElementById('main-search-input');
+    const clearMainSearchBtn = document.getElementById('clear-main-search');
+
+    if (mainSearchInput && clearMainSearchBtn) {
+        // Show/hide the 'x' button based on input value
+        mainSearchInput.addEventListener('input', function() {
+            if (this.value) {
+                clearMainSearchBtn.style.display = 'block';
+            } else {
+                clearMainSearchBtn.style.display = 'none';
+            }
+        });
+
+        // Clear the input and hide the button when 'x' is clicked
+        clearMainSearchBtn.addEventListener('click', function() {
+            mainSearchInput.value = '';
+            this.style.display = 'none';
+        });
+    }
+        
+        // Advanced Search Logic
+        const toggleButton = document.getElementById('advanced-search-toggle');
+        const dropdown = document.getElementById('advanced-search-dropdown');
+        const clearButton = document.getElementById('clear-search-btn');
+        const searchForm = document.querySelector('.header-search-form');
+
+        if (toggleButton && dropdown && clearButton && searchForm) {
+            // Toggle the dropdown
+            toggleButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                dropdown.classList.toggle('show');
+            });
+
+            // Close dropdown if clicked outside
+            document.addEventListener('click', function(event) {
+                if (!searchForm.contains(event.target) && dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            });
+
+            // Clear the search fields
+            clearButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                document.getElementById('from_field').value = '';
+                document.getElementById('to_field').value = '';
+                document.getElementById('subject_field').value = '';
+                document.getElementById('has_attachment').value = 'any';
+                document.getElementById('date_after_field').value = '';
+                document.getElementById('date_before_field').value = '';
+            });
+        }
+    });
+</script>
+
+</body>
+
+</html>

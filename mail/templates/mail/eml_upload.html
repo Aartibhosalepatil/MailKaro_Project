@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="form-container" style="max-width: 600px; margin: 2em auto; padding: 5em; background: #fff; border-radius: 6px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+
+  <!-- Message alert section -->
+  <!-- {% if messages %}
+    <div class="alert alert-danger">
+      {% for message in messages %}
+        {{ message }}
+      {% endfor %}
+    </div>
+  {% endif %} -->
+
+  <h2 class="mb-4">Upload EML File</h2>
+  
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label for="emlFile" class="form-label">Choose EML File:</label>
+      <input class="form-control" type="file" name="eml_file" accept=".eml" required>
+    </div>
+    <br>
+    <br>
+    <button type="submit" style="background:#1976d2;color:#fff;border:none;padding:0.3em 0.5em;border-radius:3px;font-size:1.5em;cursor:pointer;">Upload</button>
+  </form>
+<br>
+<br>
+  <hr>
+
+  <a href="{% url 'inbox' %}" class="btn btn-link mt-3">
+    <i class="fa-solid fa-arrow-left"></i> Back to Inbox
+  </a>
+  
+</div>
+{% endblock %}

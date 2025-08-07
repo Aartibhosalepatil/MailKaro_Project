@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="content-area"> 
+    <div class="inbox-header"> 
+        <a class="back-link" href="{% url 'inbox' %}">← Back to Inbox</a><br><br>
+        <!-- <h2 style="text-align: left;">Compose Email</h2>> -->
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="compose-form">
+        {% csrf_token %}
+
+       
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="{{ form.to.id_for_label }}">To:</label>
+            {{ form.to }}
+            {% if form.to.errors %}
+                <div class="field-errors">
+                    {% for error in form.to.errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.cc.id_for_label }}">Cc:</label>
+            {{ form.cc }}
+            {% if form.cc.errors %}
+                <div class="field-errors">
+                    {% for error in form.cc.errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.bcc.id_for_label }}">Bcc:</label>
+            {{ form.bcc }}
+            {% if form.bcc.errors %}
+                <div class="field-errors">
+                    {% for error in form.bcc.errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.subject.id_for_label }}">Subject:</label>
+            {{ form.subject }}
+            {% if form.subject.errors %}
+                <div class="field-errors">
+                    {% for error in form.subject.errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group form-group-body"> 
+            <label for="{{ form.body_plain.id_for_label }}">Message:</label>
+            {{ form.body_plain }} 
+            {% if form.body_plain.errors %}
+                <div class="field-errors">
+                    {% for error in form.body_plain.errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group form-group-attachments">
+            <label for="attachments">Attachments:</label>
+            <input type="file" name="attachments" id="attachments" multiple class="file-input">
+            <span class="file-input-label">Choose Files...</span>
+            <div id="selected-files" class="selected-files"></div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="send-button">Send</button>
+        </div>
+    </form>
+</div> 
+
+<script>
+    // JavaScript for custom file input styling and displaying selected files
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('attachments');
+        const fileInputLabel = document.querySelector('.file-input-label');
+        const selectedFilesContainer = document.getElementById('selected-files');
+
+        if (fileInput && fileInputLabel && selectedFilesContainer) {
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    let fileNames = '';
+                    selectedFilesContainer.innerHTML = ''; // Clear previous selections
+
+                    for (let i = 0; i < this.files.length; i++) {
+                        const fileName = this.files[i].name;
+                        fileNames += fileName + (i < this.files.length - 1 ? ', ' : '');
+
+                        const fileTag = document.createElement('span');
+                        fileTag.classList.add('file-tag');
+                        fileTag.innerHTML = `
+                            ${fileName} <i class="fas fa-times remove-file" data-index="${i}"></i>
+                        `;
+                        selectedFilesContainer.appendChild(fileTag);
+                    }
+                    fileInputLabel.textContent = this.files.length > 1 ? `${this.files.length} files selected` : fileNames;
+
+                    // Add event listeners to remove file tags
+                    selectedFilesContainer.querySelectorAll('.remove-file').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const indexToRemove = parseInt(this.dataset.index);
+                            // This part is tricky with multiple files on a single input
+                            // For simplicity, we'll clear all files and let user re-select,
+                            // or advise a custom file upload mechanism for production.
+                            // For a real-world multi-file removal, you'd need a DataTransfer object
+                            // or to send files individually.
+                            fileInput.value = ''; // Clear the input
+                            fileInputLabel.textContent = 'Choose Files...';
+                            selectedFilesContainer.innerHTML = '';
+                            alert('Files cleared. Please re-select if you wish to change attachments.');
+                        });
+                    });
+
+                } else {
+                    fileInputLabel.textContent = 'Choose Files...';
+                    selectedFilesContainer.innerHTML = '';
+                }
+            });
+        }
+    });
+</script>
+
+{% endblock %}

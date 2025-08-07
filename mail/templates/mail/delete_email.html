@@ -1,0 +1,22 @@
+<!-- {% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="delete-email-container">
+    <h2>Delete Email</h2>
+    <p class="delete-warning">This action cannot be undone.</p>
+    <form method="POST" action="{% url 'delete_email' email.id %}">
+        {% csrf_token %}
+        <button type="submit" class="delete-confirm-btn">Confirm Delete</button>
+        <a href="{% url 'inbox' %}" class="cancel-btn">Cancel</a>
+    </form>
+</div>  
+    <p>Are you sure you want to delete the email from <strong>{{ email.from_email }}</strong> with subject <strong>{{ email.subject }}</strong>?</p>
+    <form method="POST" action="{% url 'delete_email' email.id %}">
+        {% csrf_token %}
+        <button type="submit" class="delete-confirm-btn">Confirm Delete</button>
+        <a href="{% url 'inbox' %}" class="cancel-btn">Cancel</a>
+    </form> 
+</div>
+
+
+{% endblock %} -->

@@ -1,0 +1,12 @@
+# Byte-compiled / optimized / test files
+__pycache__/
+*.pyc
+
+# Django specific files
+db.sqlite3
+/media/
+/static/
+.env
+
+# My secret settings file
+my_email_client/settings.py
