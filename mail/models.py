@@ -42,3 +42,5 @@ class Attachment(models.Model):
 
     def __str__(self):
         return f"{self.filename}- {self.email.from_email}"
+    
+    

@@ -140,7 +140,9 @@
     }
 </style>
 
-<a class="back-link" href="{% url 'inbox' %}">← Back to Inbox</a>
+
+<a class="back-link" href="{{ back_url }}">{{ back_text }}</a>
+
 <div class="email-card">
     <div class="email-header">
         <div class="email-header-left">

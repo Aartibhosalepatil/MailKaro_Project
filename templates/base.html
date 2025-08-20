@@ -1,5 +1,5 @@
 {% load static %}
-{% load cache %}
+
 
 <!DOCTYPE html>
 
@@ -24,6 +24,19 @@
 </head>
 
 <body>
+    <div class="main-container">
+  <div class="main-content-container">
+        {% if messages %}
+            <ul class="messages">
+                {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% block error_content %}
+        {% endblock %}
+    </div>
 
 <div class="header">
 
@@ -203,7 +216,7 @@
 
 </li>
 
-<li>
+<!-- <li>
 
 <a href="#" class="sidebar-item">
 
@@ -211,19 +224,15 @@
 
 </a>
 
-</li>
+</li> -->
 
 <li>
-
-<a href="{% url 'sent'%}" class="sidebar-item">
-
-<i class="fas fa-paper-plane sidebar-icon"></i> Sent
-
-</a>
-
+    <a href="{% url 'sent'%}" class="sidebar-item {% if request.resolver_match.url_name == 'sent' %}active{% endif %}">
+        <i class="fas fa-paper-plane sidebar-icon"></i> Sent
+    </a>
 </li>
 
-<li>
+<!-- <li>
 
 <a href="#" class="sidebar-item">
 
@@ -231,9 +240,9 @@
 
 </a>
 
-</li>
+</li> -->
 
-<li>
+<!-- <li>
 
 <a href="#" class="sidebar-item">
 
@@ -241,9 +250,9 @@
 
 </a>
 
-</li>
+</li> -->
 
-<li>
+<!-- <li>
 
 <a href="#" class="sidebar-item">
 
@@ -251,13 +260,13 @@
 
 </a>
 
-</li>
+</li> -->
 
-<li class="sidebar-label-title">LABELS</li>
+<!-- <li class="sidebar-label-title">LABELS</li>
 
 <li><a href="#" class="sidebar-item"><i class="fas fa-tag sidebar-icon"></i> Important</a></li>
 
-<li><a href="#" class="sidebar-item"><i class="fas fa-tag sidebar-icon"></i> Work</a></li>
+<li><a href="#" class="sidebar-item"><i class="fas fa-tag sidebar-icon"></i> Work</a></li> -->
 
 </ul>
 

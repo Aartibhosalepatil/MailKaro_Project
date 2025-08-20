@@ -5,6 +5,9 @@
 {% block content %}
 <div class="inbox-header">
     <h2>Inbox</h2>
+     <div class="inbox-controls">
+        <button id="delete-selected-btn" class="delete-btn" style="display: none;">Delete Selected</button>
+     </div>
     <div class="pagination top-pagination">
         {% with current_params="" %}
             {% if query %}{% with current_params=current_params|add:"&q="|add:query %}{% endwith %}{% endif %}
@@ -79,9 +82,8 @@
         <tr class="email-row" id="email-row-{{ email.id }}">
             <td class="from-col" title="{{ email.from_email|safe }}" data-label="From">{{ email.from_email|safe }}</td>
             <td class="subject-col" data-label="Subject">
-                <a class="mail-link" href="{% url 'message_detail' 'email' email.id %}">
-                    {{ email.subject|safe }}
-                </a>
+                <a href="{% url 'message_detail' 'inbox' email.id %}" class="text-blue-600 hover:underline">{{ email.subject }}</a>
+               
             </td>
             <td class="date-col" data-label="Date">{{ email.timestamp|date:"M d, Y, g:i a" }}</td>
             <td class="action-col" data-label="Actions">

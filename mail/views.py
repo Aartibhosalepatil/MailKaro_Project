@@ -16,6 +16,8 @@ from django.contrib import messages
 from django.core.paginator import Paginator,PageNotAnInteger,EmptyPage  # used for pagination
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth.models import User
+from django.urls import reverse
 
 
 # This view for Inbox Functionality
@@ -121,16 +123,18 @@ def inbox_view(request):
 # This view for compose functionality
 @login_required
 def compose_view(request):
-    if request.method == 'POST':  #This means user submitted the form that time only method is POST
-        form = EmailForm(request.POST, request.FILES) #This will create Email instance
-        if form.is_valid():   # here it will check if form is valid or not ------ if valid then it will create email objects
-            email_obj = form.save(commit=False)  # commit=False means it will not save in db yet
-            email_obj.user = request.user # setting the user to the logged-in user
-            email_obj.from_email = request.user.email # here it will set the from_email to logged in user email
-            email_obj.save() # here it will save in db
-            form.save_m2m() # This is necessary to save many-to-many relationships like 'to', 'cc', and 'bcc'
+    if request.method == 'POST':
+        form = EmailForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Sender copy
+            email_obj = form.save(commit=False)
+            email_obj.user = request.user
+            email_obj.from_email = request.user.email
+            email_obj.email_type = 2  # for sent emails
+            email_obj.save()
+            form.save_m2m() #this is used to save many to many relationships if any
 
-            # Save attachments if any
+            # Save attachments for sender copy
             for f in request.FILES.getlist('attachments'):
                 Attachment.objects.create(
                     email=email_obj,
@@ -138,30 +142,78 @@ def compose_view(request):
                     file=f
                 )
 
-            return redirect('inbox') #redirecting to inbox page
+            # Recipient copies
+            recipient_emails = [email.strip() for email in form.cleaned_data['to'].split(',')]
+            for recipient_email in recipient_emails:
+                try:
+                    recipient_user = User.objects.get(email=recipient_email)
+
+                    recipient_email_obj = Email.objects.create(
+                        user=recipient_user,
+                        from_email=email_obj.from_email,
+                        to=email_obj.to,
+                        cc=email_obj.cc,
+                        bcc=email_obj.bcc,
+                        subject=email_obj.subject,
+                        body_plain=email_obj.body_plain,
+                        body_html=email_obj.body_html,
+                        email_type=0,  # this is for inbox emails
+                        is_read=False
+                    )
+
+                    # Copy attachments
+                    for att in email_obj.attachments.all():
+                        Attachment.objects.create(
+                            email=recipient_email_obj,
+                            filename=att.filename,
+                            file=att.file
+                        )
+
+                except User.DoesNotExist:
+                    messages.warning(request, f"User with email {recipient_email} not found. Mail skipped.")
+
+            messages.success(request, "Email sent successfully!")
+            return redirect('sent')  # redirect to Sent folder
     else:
-        form = EmailForm()    # if request is not POST then this will show empty form i.e compose form
+        form = EmailForm()
+
     return render(request, 'mail/compose.html', {'form': form})
 
 
 # This view for message_details means after clicking on subject link detailed email message will come
 @login_required
-def message_detail_view(request, type,email_id):
-    email_obj = get_object_or_404(Email, id=email_id)  # here it will find through email if not found throws an error
-    # check permissions if user has access to this or not otherwise it shows 403 page
-    if request.user.email not in email_obj.to and \
-       (email_obj.cc is None or request.user.email not in email_obj.cc) and \
-       (email_obj.bcc is None or request.user.email not in email_obj.bcc) and \
-       email_obj.user != request.user:
-        return render(request, 'mail/403.html', status=403)   
+def message_detail_view(request, type, email_id):
+    # This checks if the email belongs to the user OR if the user is a recipient (to, cc, or bcc)
+    email_obj = get_object_or_404(Email, 
+        Q(id=email_id) & (
+            Q(user=request.user) |
+            Q(to__icontains=request.user.email) |
+            Q(cc__icontains=request.user.email) |
+            Q(bcc__icontains=request.user.email)
+        )
+        
+    )
 
     email_obj.is_read = True
     email_obj.save()
-    return render(request, 'mail/message_detail.html', {'email': email_obj})
+     # Decide back link based on "type"
+    if type == "sent":
+        back_url = reverse("sent")   # make sure your url name for sent list is 'sent'
+        back_text = "← Back to Sent"
+    else:
+        back_url = reverse("inbox")  # make sure your url name for inbox list is 'inbox'
+        back_text = "← Back to Inbox"
+
+    return render(request, "mail/message_detail.html", {
+        "email": email_obj,
+        "back_url": back_url,
+        "back_text": back_text,
+    })
+  
 
 @login_required
 def sent_mail_view(request):
-    emails = Email.objects.filter(user=request.user).order_by('-timestamp')
+    emails = Email.objects.filter(user=request.user, email_type=2).order_by('-timestamp')
     return render(request, 'mail/sent.html', {'emails': emails})
 
 
@@ -237,7 +289,7 @@ def parse_eml(file):
     from_email = msg.get('From', '')  # then extract headers 
     to_email = msg.get('To', '')
     cc_email = msg.get('Cc', '')
-    bcc_email = msg.get('Bcc', '')
+    bcc_email = msg.get('Bcc', '') 
     subject = msg.get('Subject', '')
     date = msg.get('Date', '')
 
@@ -329,3 +381,8 @@ def delete_email_view(request, email_id):
         # Log the error for debugging on the server side
         print(f"Error deleting email {email_id}: {e}")
         return JsonResponse({'error': 'An internal server error occurred'}, status=500)
+    
+
+
+
+
